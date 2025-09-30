@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Gestion Financière - Coworking</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -34,7 +35,7 @@
             <a href="#" class="nav-link">
                 <i class="fas fa-chart-line"></i> Dashboard
             </a>
-            <a href="#" class="nav-link active">
+            <a href="" class="nav-link active">
                 <i class="fas fa-wallet"></i> Finances
             </a>
             <a href="#" class="nav-link">
@@ -52,7 +53,7 @@
             <a href="#" class="nav-link">
                 <i class="fas fa-poll"></i> Sondages
             </a>
-            <a href="#" class="nav-link ">
+            <a href="#" class="nav-link">
                 <i class="fas fa-calendar-star"></i> Événements
             </a>
             <a href="#" class="nav-link">
@@ -72,7 +73,6 @@
                 <div class="col-md-6">
                     <div class="welcome-text">
                         <h2>Gestion Financière</h2>
-                        <p><i class="fas fa-calendar-alt me-2"></i><span id="current-date"></span></p>
                     </div>
                 </div>
                 <div class="col-md-6">
@@ -82,7 +82,7 @@
                             <span class="notification-badge">5</span>
                         </button>
                         <div class="user-avatar">
-                            MA
+                            {{ strtoupper(substr(auth()->user()->display_name ?? 'MA', 0, 2)) }}
                         </div>
                     </div>
                 </div>
@@ -94,14 +94,14 @@
             <div class="stats-card revenue">
                 <div class="stats-header">
                     <div class="stats-icon revenue">
-                        <i class="fas fa-euro-sign"></i>
+                        <i class="fas fa-chart-line"></i>
                     </div>
                 </div>
-                <div class="stats-number" id="revenue-number">67,850 MAD</div>
-                <div class="stats-label">Revenus totaux</div>
-                <div class="stats-trend trend-positive">
-                    <i class="fas fa-trending-up"></i>
-                    <span>+15.2% ce mois</span>
+                <div class="stats-number" id="revenue-number">{{ number_format($stats['net_profit'], 0, ',', ' ') }} MAD</div>
+                <div class="stats-label">Bénéfice Net (Revenus - Dépenses)</div>
+                <div class="stats-trend {{ $stats['revenue_growth'] >= 0 ? 'trend-positive' : 'trend-negative' }}">
+                    <i class="fas fa-{{ $stats['revenue_growth'] >= 0 ? 'trending-up' : 'trending-down' }}"></i>
+                    <span>{{ $stats['revenue_growth'] > 0 ? '+' : '' }}{{ $stats['revenue_growth'] }}% ce mois</span>
                 </div>
             </div>
             
@@ -111,11 +111,11 @@
                         <i class="fas fa-file-invoice"></i>
                     </div>
                 </div>
-                <div class="stats-number" id="invoices-number">24</div>
+                <div class="stats-number" id="invoices-number">{{ $stats['invoices_count'] }}</div>
                 <div class="stats-label">Factures émises</div>
                 <div class="stats-trend trend-positive">
                     <i class="fas fa-plus"></i>
-                    <span>+3 cette semaine</span>
+                    <span>+{{ $stats['new_invoices_week'] }} cette semaine</span>
                 </div>
             </div>
             
@@ -125,20 +125,38 @@
                         <i class="fas fa-exclamation-triangle"></i>
                     </div>
                 </div>
-                <div class="stats-number" id="overdue-number">2,350 MAD</div>
+                <div class="stats-number" id="overdue-number">{{ number_format($stats['overdue_amount'], 0, ',', ' ') }} MAD</div>
                 <div class="stats-label">Paiements en retard</div>
                 <div class="stats-trend trend-negative">
                     <i class="fas fa-exclamation"></i>
-                    <span>3 clients</span>
+                    <span>{{ $stats['overdue_count'] }} client{{ $stats['overdue_count'] > 1 ? 's' : '' }}</span>
                 </div>
             </div>
         </div>
+
+        <!-- Charts Section -->
+        <div class="charts-section loading">
+            <div class="chart-container">
+                <div class="chart-header">
+                    <h5><i class="fas fa-chart-line text-primary"></i> Évolution des revenus</h5>
+                </div>
+                <canvas id="financeChart"></canvas>
+            </div>
+
+            <div class="chart-container">
+                <div class="chart-header">
+                    <h5><i class="fas fa-chart-pie text-info"></i> Répartition des revenus</h5>
+                </div>
+                <canvas id="revenueChart"></canvas>
+            </div>
+        </div>
+
         <!-- Factures and Paiements Section -->
         <div class="section-grid loading">
             <div class="finance-card">
                 <div class="finance-header">
                     <h5><i class="fas fa-file-invoice text-info"></i> Factures récentes</h5>
-                    <a href="#" class="action-btn-sm">
+                    <a href="#" class="action-btn-sm" onclick="generateNewInvoice()">
                         <i class="fas fa-plus"></i> Nouvelle facture
                     </a>
                 </div>
@@ -147,16 +165,16 @@
                     <div class="filter-row">
                         <div>
                             <label class="form-label">Statut</label>
-                            <select class="form-select">
+                            <select class="form-select" id="invoice-status-filter">
                                 <option>Tous les statuts</option>
-                                <option>Payée</option>
-                                <option>En attente</option>
-                                <option>En retard</option>
+                                <option value="paid">Payée</option>
+                                <option value="pending">En attente</option>
+                                <option value="overdue">En retard</option>
                             </select>
                         </div>
                         <div>
                             <label class="form-label">Période</label>
-                            <select class="form-select">
+                            <select class="form-select" id="invoice-period-filter">
                                 <option>Ce mois</option>
                                 <option>3 derniers mois</option>
                                 <option>Cette année</option>
@@ -177,152 +195,35 @@
                             </tr>
                         </thead>
                         <tbody>
+                            @forelse($recentInvoices as $invoice)
                             <tr>
-                                <td><strong>#INV-001</strong></td>
-                                <td>TechCorp SARL</td>
-                                <td><strong>2,500 MAD</strong></td>
-                                <td><span class="status-badge status-paid">Payée</span></td>
+                                <td><strong>{{ $invoice['invoice_number'] }}</strong></td>
+                                <td>{{ $invoice['client_name'] }}</td>
+                                <td><strong>{{ number_format($invoice['amount'], 0, ',', ' ') }} MAD</strong></td>
                                 <td>
-                                    <a href="#" class="action-btn-sm">
-                                        <i class="fas fa-eye"></i>
+                                    <span class="status-badge status-{{ $invoice['status'] }}">
+                                        {{ $invoice['status_label'] }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <a href="#" class="action-btn-sm" onclick="downloadInvoicePDF({{ $invoice['id'] }}); return false;" title="Télécharger PDF">
+                                        <i class="fas fa-download"></i>
                                     </a>
                                 </td>
                             </tr>
+                            @empty
                             <tr>
-                                <td><strong>#INV-002</strong></td>
-                                <td>Marie Dupont</td>
-                                <td><strong>800 MAD</strong></td>
-                                <td><span class="status-badge status-pending">En attente</span></td>
-                                <td>
-                                    <a href="#" class="action-btn-sm">
-                                        <i class="fas fa-paper-plane"></i>
-                                    </a>
-                                </td>
+                                <td colspan="5" class="text-center">Aucune facture récente</td>
                             </tr>
-                            <tr>
-                                <td><strong>#INV-003</strong></td>
-                                <td>Jean Martin</td>
-                                <td><strong>1,200 MAD</strong></td>
-                                <td><span class="status-badge status-overdue">En retard</span></td>
-                                <td>
-                                    <a href="#" class="action-btn-sm">
-                                        <i class="fas fa-exclamation"></i>
-                                    </a>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><strong>#INV-004</strong></td>
-                                <td>StartupX</td>
-                                <td><strong>3,200 MAD</strong></td>
-                                <td><span class="status-badge status-paid">Payée</span></td>
-                                <td>
-                                    <a href="#" class="action-btn-sm">
-                                        <i class="fas fa-eye"></i>
-                                    </a>
-                                </td>
-                            </tr>
+                            @endforelse
                         </tbody>
                     </table>
                 </div>
             </div>
-
-            <div class="finance-card">
-                <div class="finance-header">
-                    <h5><i class="fas fa-credit-card text-success"></i> Paiements récents</h5>
-                    <a href="#" class="action-btn-sm">
-                        <i class="fas fa-plus"></i> Enregistrer paiement
-                    </a>
-                </div>
-
-                <div class="filter-section">
-                    <div class="filter-row">
-                        <div>
-                            <label class="form-label">Méthode</label>
-                            <select class="form-select">
-                                <option>Toutes les méthodes</option>
-                                <option>CMI</option>
-                                <option>Espèces</option>
-                                <option>Virement</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="form-label">Recherche</label>
-                            <input type="text" class="form-control" placeholder="Nom du client...">
-                        </div>
-                    </div>
-                </div>
-
-                <div class="table-responsive">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Client</th>
-                                <th>Montant</th>
-                                <th>Méthode</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>09/09/2025</td>
-                                <td>TechCorp SARL</td>
-                                <td><strong>2,500 MAD</strong></td>
-                                <td>
-                                    <div class="payment-method">
-                                        <div class="method-icon method-cmi">CMI</div>
-                                        <span>Carte bancaire</span>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>08/09/2025</td>
-                                <td>StartupX</td>
-                                <td><strong>3,200 MAD</strong></td>
-                                <td>
-                                    <div class="payment-method">
-                                        <div class="method-icon method-bank">VIR</div>
-                                        <span>Virement</span>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>07/09/2025</td>
-                                <td>Ahmed Benali</td>
-                                <td><strong>450 MAD</strong></td>
-                                <td>
-                                    <div class="payment-method">
-                                        <div class="method-icon method-cash">€</div>
-                                        <span>Espèces</span>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>06/09/2025</td>
-                                <td>Sarah Cohen</td>
-                                <td><strong>1,100 MAD</strong></td>
-                                <td>
-                                    <div class="payment-method">
-                                        <div class="method-icon method-cmi">CMI</div>
-                                        <span>Carte bancaire</span>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- Abonnements and Dépenses Section -->
-        <div class="section-grid loading">
             <div class="finance-card">
                 <div class="finance-header">
                     <h5><i class="fas fa-sync-alt" style="color: var(--primary-color);"></i> Abonnements actifs</h5>
-                    <a href="#" class="action-btn-sm">
-                        <i class="fas fa-cog"></i> Gérer
-                    </a>
                 </div>
-
                 <div class="table-responsive">
                     <table class="table">
                         <thead>
@@ -334,39 +235,37 @@
                             </tr>
                         </thead>
                         <tbody>
+                            @forelse($activeSubscriptions as $subscription)
                             <tr>
-                                <td>Marie Dupont</td>
-                                <td><span class="status-badge" style="background: rgba(52, 152, 219, 0.1); color: var(--info-color);">Hot Desk</span></td>
-                                <td><strong>800 MAD/mois</strong></td>
-                                <td>15/09/2025</td>
+                                <td>{{ $subscription['member_name'] }}</td>
+                                <td>
+                                    <span class="status-badge" style="background: rgba(52, 152, 219, 0.1); color: var(--info-color);">
+                                        {{ $subscription['plan_label'] }}
+                                    </span>
+                                </td>
+                                <td><strong>{{ number_format($subscription['amount'], 0, ',', ' ') }} MAD/{{ strtolower($subscription['billing_cycle']) }}</strong></td>
+                                <td>{{ $subscription['next_billing_date'] }}</td>
                             </tr>
+                            @empty
                             <tr>
-                                <td>TechCorp SARL</td>
-                                <td><span class="status-badge" style="background: rgba(155, 89, 182, 0.1); color: #9B59B6;">Bureau Privé</span></td>
-                                <td><strong>2,500 MAD/mois</strong></td>
-                                <td>20/09/2025</td>
+                                <td colspan="4" class="text-center">Aucun abonnement actif</td>
                             </tr>
-                            <tr>
-                                <td>Jean Martin</td>
-                                <td><span class="status-badge" style="background: rgba(39, 174, 96, 0.1); color: var(--success-color);">Bureau Dédié</span></td>
-                                <td><strong>1,200 MAD/mois</strong></td>
-                                <td>25/09/2025</td>
-                            </tr>
-                            <tr>
-                                <td>StartupX</td>
-                                <td><span class="status-badge" style="background: rgba(155, 89, 182, 0.1); color: #9B59B6;">Bureau Privé</span></td>
-                                <td><strong>3,200 MAD/mois</strong></td>
-                                <td>01/10/2025</td>
-                            </tr>
+                            @endforelse
                         </tbody>
                     </table>
                 </div>
             </div>
+            
+        </div>
+
+        <!-- Abonnements and Dépenses Section -->
+        <div class="section-grid loading">
+            
 
             <div class="finance-card">
                 <div class="finance-header">
                     <h5><i class="fas fa-receipt text-warning"></i> Dépenses récentes</h5>
-                    <a href="#" class="action-btn-sm">
+                    <a href="#" class="action-btn-sm" onclick="addExpense()">
                         <i class="fas fa-plus"></i> Ajouter dépense
                     </a>
                 </div>
@@ -382,38 +281,193 @@
                             </tr>
                         </thead>
                         <tbody>
+                            @forelse($recentExpenses as $expense)
                             <tr>
-                                <td>09/09/2025</td>
-                                <td>Électricité</td>
-                                <td><span class="status-badge" style="background: rgba(243, 156, 18, 0.1); color: var(--warning-color);">Charges</span></td>
-                                <td><strong>1,450 MAD</strong></td>
+                                <td>{{ $expense['date'] }}</td>
+                                <td>{{ $expense['description'] }}</td>
+                                <td>
+                                    <span class="status-badge" style="background: rgba(243, 156, 18, 0.1); color: var(--warning-color);">
+                                        {{ $expense['category'] }}
+                                    </span>
+                                </td>
+                                <td><strong>{{ number_format($expense['amount'], 0, ',', ' ') }} MAD</strong></td>
                             </tr>
+                            @empty
                             <tr>
-                                <td>08/09/2025</td>
-                                <td>Café et fournitures</td>
-                                <td><span class="status-badge" style="background: rgba(52, 152, 219, 0.1); color: var(--info-color);">Fournitures</span></td>
-                                <td><strong>680 MAD</strong></td>
+                                <td colspan="4" class="text-center">Aucune dépense récente</td>
                             </tr>
-                            <tr>
-                                <td>05/09/2025</td>
-                                <td>Maintenance climatisation</td>
-                                <td><span class="status-badge" style="background: rgba(231, 76, 60, 0.1); color: var(--danger-color);">Maintenance</span></td>
-                                <td><strong>2,200 MAD</strong></td>
-                            </tr>
-                            <tr>
-                                <td>01/09/2025</td>
-                                <td>Internet fibre</td>
-                                <td><span class="status-badge" style="background: rgba(243, 156, 18, 0.1); color: var(--warning-color);">Charges</span></td>
-                                <td><strong>890 MAD</strong></td>
-                            </tr>
+                            @endforelse
                         </tbody>
                     </table>
                 </div>
             </div>
         </div>
     </div>
+    <!-- Invoice Modal -->
+<div class="modal fade" id="invoiceModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Nouvelle Facture</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="invoiceForm">
+                <div class="modal-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Client *</label>
+                            <select class="form-select" name="user_id" required>
+                                <option value="">Sélectionner un client</option>
+                                @foreach($users ?? [] as $user)
+                                    <option value="{{ $user->id }}">{{ $user->display_name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Montant HT *</label>
+                            <input type="number" class="form-control" name="amount" step="0.01" required>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">TVA</label>
+                            <input type="number" class="form-control" name="tax_amount" step="0.01" value="0">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Échéance (jours) *</label>
+                            <input type="number" class="form-control" name="due_days" value="30" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description *</label>
+                        <textarea class="form-control" name="description" rows="3" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Notes</label>
+                        <textarea class="form-control" name="notes" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Créer la facture</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
+<!-- Devis Modal -->
+<div class="modal fade" id="devisModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Nouveau Devis</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="devisForm">
+                <div class="modal-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Client *</label>
+                            <select class="form-select" name="user_id" required>
+                                <option value="">Sélectionner un client</option>
+                                @foreach($users ?? [] as $user)
+                                    <option value="{{ $user->id }}">{{ $user->display_name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Montant HT *</label>
+                            <input type="number" class="form-control" name="amount" step="0.01" required>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">TVA</label>
+                            <input type="number" class="form-control" name="tax_amount" step="0.01" value="0">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Validité (jours) *</label>
+                            <input type="number" class="form-control" name="valid_days" value="30" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description *</label>
+                        <textarea class="form-control" name="description" rows="3" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Conditions</label>
+                        <textarea class="form-control" name="terms" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Créer le devis</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Expense Modal -->
+<div class="modal fade" id="expenseModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Nouvelle Dépense</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="expenseForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Titre *</label>
+                        <input type="text" class="form-control" name="title" required>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Montant *</label>
+                            <input type="number" class="form-control" name="amount" step="0.01" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Catégorie *</label>
+                            <select class="form-select" name="category" required>
+                                <option value="rent">Loyer</option>
+                                <option value="utilities">Charges</option>
+                                <option value="maintenance">Maintenance</option>
+                                <option value="supplies">Fournitures</option>
+                                <option value="equipment">Équipement</option>
+                                <option value="salaries">Salaires</option>
+                                <option value="marketing">Marketing</option>
+                                <option value="insurance">Assurance</option>
+                                <option value="other">Autre</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Fournisseur</label>
+                            <input type="text" class="form-control" name="vendor">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Date *</label>
+                            <input type="date" class="form-control" name="expense_date" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" name="description" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-warning">Ajouter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
-   <script src="{{ asset('assets/js/admin/finances.js') }}"></script>
+    
+    <script src="{{ asset('assets/js/admin/finances.js') }}"></script>
 </body>
 </html>

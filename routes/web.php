@@ -8,6 +8,8 @@ use App\Http\Controllers\Admin\PollsController;
 use App\Http\Controllers\Admin\SpacesController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\Admin\FinancesController;
+
+
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -105,6 +107,28 @@ Route::prefix('dashboard')->group(function () {
     });
 });
 
+//finances
+Route::prefix('admin')->name('admin.')->group(function () {
+    
+    // Main finances page
+    Route::get('/finances', [FinancesController::class, 'index'])->name('finances');
+    
+    // Stats and chart data (AJAX)
+    Route::get('/finances/stats', [FinancesController::class, 'getStats'])->name('finances.stats');
+    Route::get('/finances/chart-data', [FinancesController::class, 'getChartDataAjax'])->name('finances.chart-data');
+    
+    // Invoice management
+    Route::post('/finances/invoices', [FinancesController::class, 'createInvoice'])->name('finances.invoices.create');
+    Route::get('/finances/invoices/{id}/pdf', [FinancesController::class, 'downloadInvoicePDF'])->name('finances.invoices.pdf');
+    
+    // Devis management
+    Route::post('/finances/devis', [FinancesController::class, 'createDevis'])->name('finances.devis.create');
+    Route::get('/finances/devis/{id}/pdf', [FinancesController::class, 'downloadDevisPDF'])->name('finances.devis.pdf');
+    
+    
+});
+
+Route::post('/admin/finances/expenses', [FinancesController::class, 'createExpense'])->name('admin.finances.expenses.store');
 
 
 // Redirect root to login for now
