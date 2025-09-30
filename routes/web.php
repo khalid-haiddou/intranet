@@ -8,7 +8,7 @@ use App\Http\Controllers\Admin\PollsController;
 use App\Http\Controllers\Admin\SpacesController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\Admin\FinancesController;
-
+use App\Http\Controllers\Admin\AdminDashboardController;
 
 /*
 |--------------------------------------------------------------------------
@@ -107,6 +107,12 @@ Route::prefix('dashboard')->group(function () {
     });
 });
 
+// Dashboardroutes
+Route::prefix('admin')->name('admin.')->group(function () {
+    Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard/data', [AdminDashboardController::class, 'getData'])->name('dashboard.data');
+    Route::get('/dashboard/refresh', [AdminDashboardController::class, 'refresh'])->name('dashboard.refresh');
+});
 //finances
 Route::prefix('admin')->name('admin.')->group(function () {
     
