@@ -122,15 +122,15 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('/finances/invoices/{id}/pdf', [FinancesController::class, 'downloadInvoicePDF'])->name('finances.invoices.pdf');
     
     // Devis management
-    Route::post('/finances/devis', [FinancesController::class, 'createDevis'])->name('finances.devis.create');
-    Route::get('/finances/devis/{id}/pdf', [FinancesController::class, 'downloadDevisPDF'])->name('finances.devis.pdf');
     
     
 });
 
 Route::post('/admin/finances/expenses', [FinancesController::class, 'createExpense'])->name('admin.finances.expenses.store');
-
-
+Route::post('/admin/finances/devis', [FinancesController::class, 'createDevis'])->name('admin.finances.devis.store');
+Route::get('/admin/finances/devis/{id}/pdf', [FinancesController::class, 'downloadDevisPDF'])->name('admin.finances.devis.pdf');
+Route::delete('/admin/finances/devis/{id}', [FinancesController::class, 'deleteDevis'])->name('admin.finances.devis.delete');
+Route::put('/admin/finances/invoices/{id}', [FinancesController::class, 'updateInvoice'])->name('admin.finances.invoices.update');
 // Redirect root to login for now
 Route::get('/', function () {
     return redirect()->route('login');

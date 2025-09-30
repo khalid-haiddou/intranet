@@ -231,40 +231,6 @@
                 </div>
             </div>
         </div>
-
-        <!-- Quick Actions -->
-        <div class="quick-actions loading">
-            <div class="info-header">
-                <i class="fas fa-bolt" style="color: var(--primary-color);"></i>
-                <h5>Actions rapides</h5>
-            </div>
-            <div class="actions-grid">
-                <a href="#" class="action-btn">
-                    <i class="fas fa-user-plus"></i>
-                    <span>Ajouter membre</span>
-                </a>
-                <a href="#" class="action-btn">
-                    <i class="fas fa-file-invoice"></i>
-                    <span>Créer facture</span>
-                </a>
-                <a href="#" class="action-btn">
-                    <i class="fas fa-calendar-plus"></i>
-                    <span>Réservation</span>
-                </a>
-                <a href="#" class="action-btn">
-                    <i class="fas fa-bullhorn"></i>
-                    <span>Annonce</span>
-                </a>
-                <a href="#" class="action-btn">
-                    <i class="fas fa-chart-bar"></i>
-                    <span>Rapports</span>
-                </a>
-                <a href="#" class="action-btn">
-                    <i class="fas fa-cog"></i>
-                    <span>Paramètres</span>
-                </a>
-            </div>
-        </div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>

@@ -156,9 +156,7 @@
             <div class="finance-card">
                 <div class="finance-header">
                     <h5><i class="fas fa-file-invoice text-info"></i> Factures récentes</h5>
-                    <a href="#" class="action-btn-sm" onclick="generateNewInvoice()">
-                        <i class="fas fa-plus"></i> Nouvelle facture
-                    </a>
+                    
                 </div>
                 
                 <div class="filter-section">
@@ -208,6 +206,9 @@
                                 <td>
                                     <a href="#" class="action-btn-sm" onclick="downloadInvoicePDF({{ $invoice['id'] }}); return false;" title="Télécharger PDF">
                                         <i class="fas fa-download"></i>
+                                    </a>
+                                    <a href="#" class="action-btn-sm" style="background: linear-gradient(135deg, #3498db, #2980b9);" onclick="editInvoiceNumber({{ $invoice['id'] }}, '{{ $invoice['invoice_number'] }}'); return false;" title="Modifier N°">
+                                        <i class="fas fa-edit"></i>
                                     </a>
                                 </td>
                             </tr>
@@ -301,171 +302,247 @@
                     </table>
                 </div>
             </div>
+            <!-- Add this right after the invoices finance-card -->
+            <div class="finance-card">
+                <div class="finance-header">
+                    <h5><i class="fas fa-file-contract text-warning"></i> Devis récents</h5>
+                    <a href="#" class="action-btn-sm" onclick="generateNewDevis(); return false;">
+                        <i class="fas fa-plus"></i> Nouveau devis
+                    </a>
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>N°</th>
+                                <th>Client</th>
+                                <th>Montant</th>
+                                <th>Statut</th>
+                                <th>Validité</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($recentDevis as $devis)
+                            <tr>
+                                <td><strong>{{ $devis['devis_number'] }}</strong></td>
+                                <td>{{ $devis['client_name'] }}</td>
+                                <td><strong>{{ number_format($devis['amount'], 0, ',', ' ') }} MAD</strong></td>
+                                <td>
+                                    <span class="status-badge status-{{ $devis['status'] }}">
+                                        {{ $devis['status_label'] }}
+                                    </span>
+                                </td>
+                                <td><small>{{ $devis['valid_until'] }}</small></td>
+                                <td>
+                                    <a href="#" class="action-btn-sm" onclick="downloadDevisPDF({{ $devis['id'] }}); return false;" title="Télécharger PDF">
+                                        <i class="fas fa-download"></i>
+                                    </a>
+                                    <a href="#" class="action-btn-sm bg-danger" onclick="deleteDevis({{ $devis['id'] }}); return false;" title="Supprimer">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            @empty
+                            <tr>
+                                <td colspan="6" class="text-center">Aucun devis récent</td>
+                            </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
     <!-- Invoice Modal -->
-<div class="modal fade" id="invoiceModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Nouvelle Facture</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    <div class="modal fade" id="invoiceModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Nouvelle Facture</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="invoiceForm">
+                    <div class="modal-body">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Client *</label>
+                                <select class="form-select" name="user_id" required>
+                                    <option value="">Sélectionner un client</option>
+                                    @foreach($users ?? [] as $user)
+                                        <option value="{{ $user->id }}">{{ $user->display_name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Montant HT *</label>
+                                <input type="number" class="form-control" name="amount" step="0.01" required>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">TVA</label>
+                                <input type="number" class="form-control" name="tax_amount" step="0.01" value="0">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Échéance (jours) *</label>
+                                <input type="number" class="form-control" name="due_days" value="30" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Description *</label>
+                            <textarea class="form-control" name="description" rows="3" required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Notes</label>
+                            <textarea class="form-control" name="notes" rows="2"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                        <button type="submit" class="btn btn-primary">Créer la facture</button>
+                    </div>
+                </form>
             </div>
-            <form id="invoiceForm">
-                <div class="modal-body">
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Client *</label>
-                            <select class="form-select" name="user_id" required>
-                                <option value="">Sélectionner un client</option>
-                                @foreach($users ?? [] as $user)
-                                    <option value="{{ $user->id }}">{{ $user->display_name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Montant HT *</label>
-                            <input type="number" class="form-control" name="amount" step="0.01" required>
-                        </div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label">TVA</label>
-                            <input type="number" class="form-control" name="tax_amount" step="0.01" value="0">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Échéance (jours) *</label>
-                            <input type="number" class="form-control" name="due_days" value="30" required>
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Description *</label>
-                        <textarea class="form-control" name="description" rows="3" required></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Notes</label>
-                        <textarea class="form-control" name="notes" rows="2"></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                    <button type="submit" class="btn btn-primary">Créer la facture</button>
-                </div>
-            </form>
         </div>
     </div>
-</div>
 
-<!-- Devis Modal -->
-<div class="modal fade" id="devisModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Nouveau Devis</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <form id="devisForm">
-                <div class="modal-body">
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Client *</label>
-                            <select class="form-select" name="user_id" required>
-                                <option value="">Sélectionner un client</option>
-                                @foreach($users ?? [] as $user)
-                                    <option value="{{ $user->id }}">{{ $user->display_name }}</option>
-                                @endforeach
-                            </select>
+    <!-- Devis Modal -->
+    <div class="modal fade" id="devisModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Nouveau Devis</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="devisForm">
+                    <div class="modal-body">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">N° Devis *</label>
+                                <input type="text" class="form-control" name="devis_number" placeholder="Ex: D250930" required>
+                                <small class="text-muted">Format suggéré: D + année + mois + jour + numéro</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Nom du Client *</label>
+                                <input type="text" class="form-control" name="client_name" placeholder="Ex: David BenHaim" required>
+                            </div>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Montant HT *</label>
-                            <input type="number" class="form-control" name="amount" step="0.01" required>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Montant HT *</label>
+                                <input type="number" class="form-control" name="amount" step="0.01" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">TVA</label>
+                                <input type="number" class="form-control" name="tax_amount" step="0.01" value="0">
+                            </div>
                         </div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label">TVA</label>
-                            <input type="number" class="form-control" name="tax_amount" step="0.01" value="0">
-                        </div>
-                        <div class="col-md-6">
+                        <div class="mb-3">
                             <label class="form-label">Validité (jours) *</label>
                             <input type="number" class="form-control" name="valid_days" value="30" required>
                         </div>
+                        <div class="mb-3">
+                            <label class="form-label">Description *</label>
+                            <textarea class="form-control" name="description" rows="3" required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Conditions</label>
+                            <textarea class="form-control" name="terms" rows="2" placeholder="Modalités de paiement, livraison, etc."></textarea>
+                        </div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Description *</label>
-                        <textarea class="form-control" name="description" rows="3" required></textarea>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                        <button type="submit" class="btn btn-primary">Créer le devis</button>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Conditions</label>
-                        <textarea class="form-control" name="terms" rows="2"></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                    <button type="submit" class="btn btn-primary">Créer le devis</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- Expense Modal -->
-<div class="modal fade" id="expenseModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Nouvelle Dépense</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </form>
             </div>
-            <form id="expenseForm">
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Titre *</label>
-                        <input type="text" class="form-control" name="title" required>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Montant *</label>
-                            <input type="number" class="form-control" name="amount" step="0.01" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Catégorie *</label>
-                            <select class="form-select" name="category" required>
-                                <option value="rent">Loyer</option>
-                                <option value="utilities">Charges</option>
-                                <option value="maintenance">Maintenance</option>
-                                <option value="supplies">Fournitures</option>
-                                <option value="equipment">Équipement</option>
-                                <option value="salaries">Salaires</option>
-                                <option value="marketing">Marketing</option>
-                                <option value="insurance">Assurance</option>
-                                <option value="other">Autre</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Fournisseur</label>
-                            <input type="text" class="form-control" name="vendor">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Date *</label>
-                            <input type="date" class="form-control" name="expense_date" required>
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Description</label>
-                        <textarea class="form-control" name="description" rows="2"></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                    <button type="submit" class="btn btn-warning">Ajouter</button>
-                </div>
-            </form>
         </div>
     </div>
-</div>
+
+    <!-- Expense Modal -->
+    <div class="modal fade" id="expenseModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Nouvelle Dépense</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="expenseForm">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Titre *</label>
+                            <input type="text" class="form-control" name="title" required>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Montant *</label>
+                                <input type="number" class="form-control" name="amount" step="0.01" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Catégorie *</label>
+                                <select class="form-select" name="category" required>
+                                    <option value="rent">Loyer</option>
+                                    <option value="utilities">Charges</option>
+                                    <option value="maintenance">Maintenance</option>
+                                    <option value="supplies">Fournitures</option>
+                                    <option value="equipment">Équipement</option>
+                                    <option value="salaries">Salaires</option>
+                                    <option value="marketing">Marketing</option>
+                                    <option value="insurance">Assurance</option>
+                                    <option value="other">Autre</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Fournisseur</label>
+                                <input type="text" class="form-control" name="vendor">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Date *</label>
+                                <input type="date" class="form-control" name="expense_date" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-control" name="description" rows="2"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                        <button type="submit" class="btn btn-warning">Ajouter</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Invoice Number Modal -->
+    <div class="modal fade" id="editInvoiceModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Modifier le numéro de facture</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="editInvoiceForm">
+                    <input type="hidden" id="edit_invoice_id" name="invoice_id">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Numéro de facture *</label>
+                            <input type="text" class="form-control" id="edit_invoice_number" name="invoice_number" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                        <button type="submit" class="btn btn-primary">Mettre à jour</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     
     <script src="{{ asset('assets/js/admin/finances.js') }}"></script>

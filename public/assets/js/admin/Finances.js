@@ -532,3 +532,98 @@ document.addEventListener('keydown', function(e) {
         }
     }
 });
+// Add this function with the other functions
+async function deleteDevis(id) {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer ce devis ?')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/admin/finances/devis/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': window.csrfToken,
+                'Accept': 'application/json',
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showNotification(result.message, 'success');
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showNotification(result.message || 'Erreur lors de la suppression', 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification('Erreur lors de la suppression du devis', 'error');
+    }
+}
+
+// Add these functions to your finances.js file
+
+// Function to open edit modal
+function editInvoiceNumber(invoiceId, currentNumber) {
+    document.getElementById('edit_invoice_id').value = invoiceId;
+    document.getElementById('edit_invoice_number').value = currentNumber;
+    
+    const modal = new bootstrap.Modal(document.getElementById('editInvoiceModal'));
+    modal.show();
+}
+
+// Add this to initializeEventListeners() function
+function initializeEventListeners() {
+    // ... existing code ...
+    
+    // Edit Invoice Form Submission
+    const editInvoiceForm = document.getElementById('editInvoiceForm');
+    if (editInvoiceForm) {
+        editInvoiceForm.addEventListener('submit', handleEditInvoiceSubmission);
+    }
+}
+
+// Handle Edit Invoice Form Submission
+async function handleEditInvoiceSubmission(e) {
+    e.preventDefault();
+    const form = e.target;
+    const invoiceId = document.getElementById('edit_invoice_id').value;
+    const invoiceNumber = document.getElementById('edit_invoice_number').value;
+    const submitButton = form.querySelector('button[type="submit"]');
+    
+    submitButton.disabled = true;
+    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mise à jour...';
+    
+    try {
+        const response = await fetch(`/admin/finances/invoices/${invoiceId}`, {
+            method: 'PUT',
+            headers: {
+                'X-CSRF-TOKEN': window.csrfToken,
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ invoice_number: invoiceNumber })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showNotification('Numéro de facture mis à jour avec succès!', 'success');
+            const modal = bootstrap.Modal.getInstance(document.getElementById('editInvoiceModal'));
+            if (modal) modal.hide();
+            setTimeout(() => location.reload(), 1000);
+        } else if (result.errors) {
+            Object.values(result.errors).forEach(errArr => {
+                errArr.forEach(err => showNotification(err, 'error'));
+            });
+        } else {
+            showNotification(result.message || 'Erreur lors de la mise à jour', 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification('Erreur lors de la mise à jour', 'error');
+    } finally {
+        submitButton.disabled = false;
+        submitButton.innerHTML = 'Mettre à jour';
+    }
+}
