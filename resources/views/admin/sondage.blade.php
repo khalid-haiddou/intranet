@@ -32,7 +32,7 @@
             </div>
         </div>
         <nav class="sidebar-menu">
-            <a href="/admin/dashboard" class="nav-link active">
+            <a href="/admin/dashboard" class="nav-link ">
                 <i class="fas fa-chart-line"></i> Dashboard
             </a>
             <a href="/admin/finances" class="nav-link">
@@ -50,7 +50,7 @@
             <a href="#" class="nav-link">
                 <i class="fas fa-comments"></i> Chat Interne
             </a>
-            <a href="/dashboard/sondages" class="nav-link">
+            <a href="/dashboard/sondages" class="nav-link active">
                 <i class="fas fa-poll"></i> Sondages
             </a>
             <a href="/dashboard/evenements" class="nav-link">

@@ -32,10 +32,10 @@
             </div>
         </div>
         <nav class="sidebar-menu">
-            <a href="/admin/dashboard" class="nav-link active">
+            <a href="/admin/dashboard" class="nav-link ">
                 <i class="fas fa-chart-line"></i> Dashboard
             </a>
-            <a href="/admin/finances" class="nav-link">
+            <a href="/admin/finances" class="nav-link active">
                 <i class="fas fa-wallet"></i> Finances
             </a>
             <a href="/dashboard/members" class="nav-link">
