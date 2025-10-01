@@ -10,6 +10,8 @@ use App\Http\Controllers\EventController;
 use App\Http\Controllers\Admin\FinancesController;
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\User\UserProfileController;
+use App\Http\Controllers\User\UserSubscriptionController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -154,6 +156,14 @@ Route::prefix('user')->name('user.')->group(function () {
     Route::post('/profil/notifications', [UserProfileController::class, 'updateNotifications'])->name('profil.notifications');
     Route::post('/profil/deactivate', [UserProfileController::class, 'deactivate'])->name('profil.deactivate');
     Route::delete('/profil/delete', [UserProfileController::class, 'destroy'])->name('profil.delete');
+});
+
+
+Route::prefix('user')->name('user.')->group(function () { 
+    Route::get('/abonnement', [UserSubscriptionController::class, 'index'])->name('abonnement');
+    Route::get('/abonnement/data', [UserSubscriptionController::class, 'getSubscriptionDataAjax'])->name('abonnement.data'); // UPDATED
+    Route::post('/abonnement/cancel', [UserSubscriptionController::class, 'cancelSubscription'])->name('abonnement.cancel');
+    Route::get('/abonnement/invoice/{id}/download', [UserSubscriptionController::class, 'downloadInvoice'])->name('abonnement.invoice.download');
 });
 
 

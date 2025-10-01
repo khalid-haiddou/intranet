@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Mon Abonnement - La Station Coworking</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/chart.js/3.9.1/chart.min.js"></script>
     <link rel="stylesheet" href="{{ asset('assets/css/users/abonnement.css') }}">
 </head>
 <body>
@@ -37,10 +37,10 @@
             <a href="#" class="nav-link">
                 <i class="fas fa-calendar-check"></i> Réservations
             </a>
-            <a href="#" class="nav-link">
+            <a href="{{ route('user.profil') }}" class="nav-link">
                 <i class="fas fa-user"></i> Mon Profil
             </a>
-            <a href="#" class="nav-link active">
+            <a href="{{ route('user.abonnement') }}" class="nav-link active">
                 <i class="fas fa-credit-card"></i> Mon Abonnement
             </a>
             <a href="#" class="nav-link">
@@ -72,29 +72,29 @@
         <div class="subscription-overview loading">
             <div class="plan-header">
                 <div class="plan-info">
-                    <h3>Bureau Dédié</h3>
-                    <p>Plan mensuel actif depuis mars 2023</p>
+                    <h3>{{ $subscriptionData['plan_name'] }}</h3>
+                    <p>Plan {{ strtolower($subscriptionData['billing_cycle']) }} actif depuis {{ $subscriptionData['member_since'] }}</p>
                 </div>
                 <div class="plan-status">
-                    <i class="fas fa-check-circle"></i>
-                    Actif
+                    <i class="fas fa-{{ $subscriptionData['is_active'] ? 'check-circle' : 'times-circle' }}"></i>
+                    {{ $subscriptionData['is_active'] ? 'Actif' : 'Inactif' }}
                 </div>
             </div>
             <div class="subscription-details">
                 <div class="detail-item">
-                    <div class="detail-number">27</div>
+                    <div class="detail-number">{{ $subscriptionData['days_remaining'] }}</div>
                     <div class="detail-label">Jours restants</div>
                 </div>
                 <div class="detail-item">
-                    <div class="detail-number">2,500</div>
-                    <div class="detail-label">MAD/mois</div>
+                    <div class="detail-number">{{ number_format($subscriptionData['base_price'], 0) }}</div>
+                    <div class="detail-label">MAD/{{ $subscriptionData['billing_cycle'] }}</div>
                 </div>
                 <div class="detail-item">
-                    <div class="detail-number">15 Jan</div>
+                    <div class="detail-number">{{ $subscriptionData['next_billing_date'] }}</div>
                     <div class="detail-label">Prochaine facture</div>
                 </div>
                 <div class="detail-item">
-                    <div class="detail-number">Auto</div>
+                    <div class="detail-number">{{ $subscriptionData['auto_renewal'] ? 'Auto' : 'Manuel' }}</div>
                     <div class="detail-label">Renouvellement</div>
                 </div>
             </div>
@@ -114,10 +114,10 @@
                         <div class="progress-ring">
                             <svg width="120" height="120">
                                 <circle class="bg" cx="60" cy="60" r="50"></circle>
-                                <circle class="progress" cx="60" cy="60" r="50" id="usageCircle"></circle>
+                                <circle class="progress" cx="60" cy="60" r="50" id="usageCircle" data-percentage="{{ $usageStats['usage_percentage'] }}"></circle>
                             </svg>
                             <div class="progress-text">
-                                <div class="progress-percentage">75%</div>
+                                <div class="progress-percentage">{{ $usageStats['usage_percentage'] }}%</div>
                                 <div class="progress-label">Utilisation</div>
                             </div>
                         </div>
@@ -125,11 +125,11 @@
                     <div class="col-md-6">
                         <div class="usage-stats">
                             <div class="usage-item">
-                                <div class="usage-number">142h</div>
+                                <div class="usage-number">{{ $usageStats['total_hours'] }}h</div>
                                 <div class="usage-label">Temps passé</div>
                             </div>
                             <div class="usage-item">
-                                <div class="usage-number">28</div>
+                                <div class="usage-number">{{ $usageStats['days_used'] }}</div>
                                 <div class="usage-label">Jours utilisés</div>
                             </div>
                         </div>
@@ -141,44 +141,25 @@
                     <h5>Historique des factures</h5>
                 </div>
 
-                <div class="invoice-item">
-                    <div class="invoice-info">
-                        <h6>Décembre 2024</h6>
-                        <small>Facturé le 1 déc 2024 • Payé</small>
+                @forelse($invoices as $invoice)
+                    <div class="invoice-item">
+                        <div class="invoice-info">
+                            <h6>{{ $invoice['month'] }}</h6>
+                            <small>Facturé le {{ $invoice['issued_date'] }} • {{ $invoice['status_label'] }}</small>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 15px;">
+                            <span class="invoice-amount">{{ number_format($invoice['amount'], 2) }} MAD</span>
+                            <a href="{{ route('user.abonnement.invoice.download', $invoice['id']) }}" class="download-btn">
+                                <i class="fas fa-download"></i>
+                            </a>
+                        </div>
                     </div>
-                    <div style="display: flex; align-items: center; gap: 15px;">
-                        <span class="invoice-amount">2,500 MAD</span>
-                        <button class="download-btn" onclick="downloadInvoice('dec-2024')">
-                            <i class="fas fa-download"></i>
-                        </button>
+                @empty
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Aucune facture disponible pour le moment.
                     </div>
-                </div>
-
-                <div class="invoice-item">
-                    <div class="invoice-info">
-                        <h6>Novembre 2024</h6>
-                        <small>Facturé le 1 nov 2024 • Payé</small>
-                    </div>
-                    <div style="display: flex; align-items: center; gap: 15px;">
-                        <span class="invoice-amount">2,500 MAD</span>
-                        <button class="download-btn" onclick="downloadInvoice('nov-2024')">
-                            <i class="fas fa-download"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <div class="invoice-item">
-                    <div class="invoice-info">
-                        <h6>Octobre 2024</h6>
-                        <small>Facturé le 1 oct 2024 • Payé</small>
-                    </div>
-                    <div style="display: flex; align-items: center; gap: 15px;">
-                        <span class="invoice-amount">2,500 MAD</span>
-                        <button class="download-btn" onclick="downloadInvoice('oct-2024')">
-                            <i class="fas fa-download"></i>
-                        </button>
-                    </div>
-                </div>
+                @endforelse
             </div>
 
             <!-- Billing Information -->
@@ -191,19 +172,19 @@
                 <div class="billing-info">
                     <div class="billing-item">
                         <span class="billing-label">Plan actuel</span>
-                        <span class="billing-value">Bureau Dédié</span>
+                        <span class="billing-value">{{ $subscriptionData['plan_name'] }}</span>
                     </div>
                     <div class="billing-item">
-                        <span class="billing-label">Tarif mensuel</span>
-                        <span class="billing-value">2,500 MAD</span>
+                        <span class="billing-label">Tarif {{ $subscriptionData['billing_cycle'] }}</span>
+                        <span class="billing-value">{{ number_format($subscriptionData['base_price'], 2) }} MAD</span>
                     </div>
                     <div class="billing-item">
                         <span class="billing-label">Taxes (TVA 20%)</span>
-                        <span class="billing-value">500 MAD</span>
+                        <span class="billing-value">{{ number_format($subscriptionData['tax_amount'], 2) }} MAD</span>
                     </div>
                     <div class="billing-item">
-                        <span class="billing-label">Total mensuel</span>
-                        <span class="billing-value">3,000 MAD</span>
+                        <span class="billing-label">Total {{ $subscriptionData['billing_cycle'] }}</span>
+                        <span class="billing-value">{{ number_format($subscriptionData['total_amount'], 2) }} MAD</span>
                     </div>
                 </div>
                 
@@ -215,20 +196,29 @@
                 <div class="billing-info">
                     <div class="billing-item">
                         <span class="billing-label">Renouvellement automatique</span>
-                        <span class="billing-value" style="color: var(--success-color);">Activé</span>
+                        <span class="billing-value" style="color: var(--{{ $subscriptionData['auto_renewal'] ? 'success' : 'danger' }}-color);">
+                            {{ $subscriptionData['auto_renewal'] ? 'Activé' : 'Désactivé' }}
+                        </span>
                     </div>
                     <div class="billing-item">
                         <span class="billing-label">Prochaine facturation</span>
-                        <span class="billing-value">15 janvier 2025</span>
+                        <span class="billing-value">{{ $subscriptionData['next_billing_date'] }}</span>
                     </div>
                 </div>
 
-                <div class="action-buttons">
-                    <button class="btn-outline-danger" onclick="cancelSubscription()">
-                        <i class="fas fa-times"></i>
-                        Annuler l'abonnement
-                    </button>
-                </div>
+                @if($subscriptionData['is_active'])
+                    <div class="action-buttons">
+                        <button class="btn-outline-danger" onclick="cancelSubscription()">
+                            <i class="fas fa-times"></i>
+                            Annuler l'abonnement
+                        </button>
+                    </div>
+                @else
+                    <div class="alert alert-warning mt-3">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Votre abonnement est inactif. Contactez le support pour le réactiver.
+                    </div>
+                @endif
             </div>
         </div>
     </div>
