@@ -1,4 +1,6 @@
-
+        // Set CSRF token for AJAX requests
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        
         // Account type selection
         document.querySelectorAll('.type-btn').forEach(btn => {
             btn.addEventListener('click', function() {
@@ -8,8 +10,11 @@
                 // Add active class to clicked button
                 this.classList.add('active');
                 
-                // Show/hide appropriate form
+                // Update hidden field
                 const type = this.dataset.type;
+                document.getElementById('accountTypeField').value = type;
+                
+                // Show/hide appropriate form
                 document.querySelectorAll('.account-form').forEach(form => {
                     form.style.display = 'none';
                 });
@@ -31,29 +36,79 @@
                 // Add active class to clicked card
                 this.classList.add('active');
                 
-                // Show price input for selected plan
+                // Update hidden field
                 const plan = this.dataset.plan;
+                document.getElementById('membershipPlanField').value = plan;
+                
+                // Show price input for selected plan
                 document.querySelectorAll('.price-input-container').forEach(container => {
                     container.classList.remove('active');
                 });
                 document.getElementById(`${plan}-price`).classList.add('active');
                 
-                // Show billing cycle options for dedicated and private offices
+                // Show billing cycle options for ALL plans
                 const billingCycle = document.getElementById('billingCycle');
+                const cycleButtons = document.querySelectorAll('.cycle-btn');
                 
-                if (plan === 'bureau-dedie' || plan === 'bureau-prive') {
-                    billingCycle.style.display = 'block';
-                } else {
-                    billingCycle.style.display = 'none';
+                // Reset all cycle buttons
+                cycleButtons.forEach(btn => btn.classList.remove('active'));
+                
+                // Always show billing cycle section for all plans
+                billingCycle.style.display = 'block';
+                
+                // Set default billing cycle based on plan type
+                let defaultCycle = 'daily'; // Default for all plans
+                
+                if (plan === 'hot-desk') {
+                    defaultCycle = 'daily'; // Hot desk default: 1 jour
+                } else if (plan === 'bureau-dedie') {
+                    defaultCycle = 'weekly'; // Bureau dédié default: 1 semaine
+                } else if (plan === 'bureau-prive') {
+                    defaultCycle = 'monthly'; // Bureau privé default: 1 mois
                 }
+                
+                // Set the default active cycle
+                const defaultBtn = document.querySelector(`[data-cycle="${defaultCycle}"]`);
+                if (defaultBtn) {
+                    defaultBtn.classList.add('active');
+                    document.getElementById('billingCycleField').value = defaultCycle;
+                }
+                
+                // Update price label based on plan
+                updatePriceLabel(plan);
             });
         });
+
+        // Function to update price label based on selected plan
+        function updatePriceLabel(plan) {
+            const priceTexts = {
+                'hot-desk': 'Prix pour la durée choisie (MAD)',
+                'bureau-dedie': 'Prix pour la durée choisie (MAD)',
+                'bureau-prive': 'Prix pour la durée choisie (MAD)'
+            };
+            
+            const priceContainer = document.getElementById(`${plan}-price`);
+            const priceText = priceContainer.querySelector('.form-text');
+            if (priceText && priceTexts[plan]) {
+                priceText.textContent = priceTexts[plan];
+            }
+        }
 
         // Billing cycle selection
         document.querySelectorAll('.cycle-btn').forEach(btn => {
             btn.addEventListener('click', function() {
                 document.querySelectorAll('.cycle-btn').forEach(b => b.classList.remove('active'));
                 this.classList.add('active');
+                
+                // Update hidden field
+                document.getElementById('billingCycleField').value = this.dataset.cycle;
+            });
+        });
+
+        // Price input handling
+        document.querySelectorAll('.price-input').forEach(input => {
+            input.addEventListener('input', function() {
+                document.getElementById('priceField').value = this.value;
             });
         });
 
@@ -136,62 +191,64 @@
         passwordInput.addEventListener('input', checkPasswordMatch);
         confirmPasswordInput.addEventListener('input', checkPasswordMatch);
 
-        // Form validation and submission
+        // Form submission handling
         document.getElementById('registerForm').addEventListener('submit', function(e) {
-            e.preventDefault();
+            // Disable submit button to prevent double submission
+            const submitBtn = document.getElementById('submitBtn');
+            const originalText = submitBtn.innerHTML;
             
-            // Check if account type is selected
-            const selectedType = document.querySelector('.type-btn.active');
-            if (!selectedType) {
-                alert('Veuillez sélectionner un type de compte');
-                return;
-            }
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Création en cours...';
+            submitBtn.disabled = true;
             
-            // Check if membership plan is selected
-            const selectedPlan = document.querySelector('.plan-card.active');
-            if (!selectedPlan) {
-                alert('Veuillez sélectionner un plan d\'abonnement');
-                return;
-            }
-            
-            // Check if price is entered for selected plan
-            const planType = selectedPlan.dataset.plan;
-            const priceInput = document.querySelector(`#${planType}-price input`);
-            if (!priceInput.value || parseFloat(priceInput.value) <= 0) {
-                alert('Veuillez saisir un tarif valide pour le plan sélectionné');
-                priceInput.focus();
-                return;
-            }
-            
-            // Check password match
-            if (passwordInput.value !== confirmPasswordInput.value) {
-                alert('Les mots de passe ne correspondent pas');
-                return;
-            }
-            
-            // Check terms acceptance
-            if (!document.getElementById('terms').checked) {
-                alert('Veuillez accepter les conditions d\'utilisation');
-                return;
-            }
-            
-            // Simulate form submission
-            const submitButton = document.querySelector('.btn-register');
-            const originalText = submitButton.innerHTML;
-            
-            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Création en cours...';
-            submitButton.disabled = true;
-            
+            // Re-enable button after 3 seconds in case of error
             setTimeout(() => {
-                alert('Compte créé avec succès ! Un email de confirmation vous a été envoyé.');
-                submitButton.innerHTML = originalText;
-                submitButton.disabled = false;
-            }, 2000);
+                if (submitBtn.disabled) {
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                }
+            }, 3000);
         });
 
-        // Initialize tooltips
-        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-        const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-            return new bootstrap.Tooltip(tooltipTriggerEl);
+        // Restore form state from old input
+        document.addEventListener('DOMContentLoaded', function() {
+            // Restore account type selection
+            const oldAccountType = '{{ old("account_type") }}';
+            if (oldAccountType) {
+                const accountTypeBtn = document.querySelector(`[data-type="${oldAccountType}"]`);
+                if (accountTypeBtn) {
+                    accountTypeBtn.click();
+                }
+            }
+            
+            // Restore membership plan selection
+            const oldMembershipPlan = '{{ old("membership_plan") }}';
+            if (oldMembershipPlan) {
+                const planCard = document.querySelector(`[data-plan="${oldMembershipPlan}"]`);
+                if (planCard) {
+                    planCard.click();
+                }
+            }
+            
+            // Restore billing cycle selection - now works for all plans
+            const oldBillingCycle = '{{ old("billing_cycle") }}';
+            if (oldBillingCycle && oldMembershipPlan) {
+                setTimeout(() => {
+                    const cycleBtn = document.querySelector(`[data-cycle="${oldBillingCycle}"]`);
+                    if (cycleBtn) {
+                        cycleBtn.click();
+                    }
+                }, 100);
+            }
+            
+            // Restore price
+            const oldPrice = '{{ old("price") }}';
+            if (oldPrice && oldMembershipPlan) {
+                setTimeout(() => {
+                    const priceInput = document.querySelector(`#${oldMembershipPlan}-price .price-input`);
+                    if (priceInput) {
+                        priceInput.value = oldPrice;
+                        document.getElementById('priceField').value = oldPrice;
+                    }
+                }, 100);
+            }
         });
- 

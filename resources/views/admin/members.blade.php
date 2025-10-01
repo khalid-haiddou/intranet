@@ -32,16 +32,16 @@
             </div>
         </div>
         <nav class="sidebar-menu">
-            <a href="#" class="nav-link">
+            <a href="/admin/dashboard" class="nav-link active">
                 <i class="fas fa-chart-line"></i> Dashboard
             </a>
-            <a href="#" class="nav-link">
+            <a href="/admin/finances" class="nav-link">
                 <i class="fas fa-wallet"></i> Finances
             </a>
-            <a href="{{ route('dashboard.members') }}" class="nav-link active">
+            <a href="/dashboard/members" class="nav-link">
                 <i class="fas fa-users"></i> Membres
             </a>
-            <a href="#" class="nav-link">
+            <a href="/dashboard/espaces" class="nav-link">
                 <i class="fas fa-door-open"></i> Espaces
             </a>
             <a href="#" class="nav-link">
@@ -50,21 +50,18 @@
             <a href="#" class="nav-link">
                 <i class="fas fa-comments"></i> Chat Interne
             </a>
-            <a href="#" class="nav-link">
+            <a href="/dashboard/sondages" class="nav-link">
                 <i class="fas fa-poll"></i> Sondages
             </a>
-            <a href="#" class="nav-link ">
+            <a href="/dashboard/evenements" class="nav-link">
                 <i class="fas fa-calendar-star"></i> Événements
             </a>
             <a href="#" class="nav-link">
                 <i class="fas fa-chart-bar"></i> Analytics
             </a>
-            <a href="{{ route('logout') }}" class="nav-link" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
-                <i class="fas fa-sign-out-alt"></i> Déconnexion
+            <a href="#" class="nav-link">
+                <i class="fas fa-cog"></i> Déconnexion
             </a>
-            <form id="logout-form" action="{{ route('logout') }}" method="POST" class="d-none">
-                @csrf
-            </form>
         </nav>
     </div>
 

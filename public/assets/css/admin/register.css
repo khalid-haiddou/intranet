@@ -139,8 +139,24 @@
             margin: 0;
         }
 
-        .account-type-selector {
-            margin-bottom: 30px;
+        .alert {
+            border: none;
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+        }
+
+        .alert-success {
+            background: rgba(39, 174, 96, 0.1);
+            color: var(--success-color);
+            border-left: 4px solid var(--success-color);
+        }
+
+        .alert-danger {
+            background: rgba(231, 76, 60, 0.1);
+            color: var(--danger-color);
+            border-left: 4px solid var(--danger-color);
         }
 
         .type-buttons {
@@ -238,6 +254,16 @@
             border-color: var(--primary-color);
             box-shadow: 0 0 0 0.25rem rgba(255, 204, 1, 0.15);
             outline: none;
+        }
+
+        .form-control.is-invalid {
+            border-color: var(--danger-color);
+        }
+
+        .invalid-feedback {
+            color: var(--danger-color);
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
         }
 
         .membership-plans {
@@ -388,6 +414,12 @@
             color: var(--secondary-color);
         }
 
+        .btn-register:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
         .login-link {
             margin-top: 25px;
             padding-top: 25px;
@@ -414,6 +446,35 @@
             color: #6c757d;
             font-size: 0.875rem;
             margin-top: 0.25rem;
+        }
+
+        .password-strength {
+            margin-top: 8px;
+        }
+
+        .strength-bar {
+            height: 4px;
+            background: #ecf0f1;
+            border-radius: 2px;
+            overflow: hidden;
+            margin-bottom: 5px;
+        }
+
+        .strength-fill {
+            height: 100%;
+            width: 0%;
+            transition: all 0.3s ease;
+            border-radius: 2px;
+        }
+
+        .strength-weak { background: var(--danger-color); width: 25%; }
+        .strength-fair { background: var(--warning-color); width: 50%; }
+        .strength-good { background: var(--info-color); width: 75%; }
+        .strength-strong { background: var(--success-color); width: 100%; }
+
+        .strength-text {
+            font-size: 0.8rem;
+            font-weight: 500;
         }
 
         @media (max-width: 768px) {
@@ -448,33 +509,4 @@
             .register-card {
                 padding: 20px;
             }
-        }
-
-        .password-strength {
-            margin-top: 8px;
-        }
-
-        .strength-bar {
-            height: 4px;
-            background: #ecf0f1;
-            border-radius: 2px;
-            overflow: hidden;
-            margin-bottom: 5px;
-        }
-
-        .strength-fill {
-            height: 100%;
-            width: 0%;
-            transition: all 0.3s ease;
-            border-radius: 2px;
-        }
-
-        .strength-weak { background: var(--danger-color); width: 25%; }
-        .strength-fair { background: var(--warning-color); width: 50%; }
-        .strength-good { background: var(--info-color); width: 75%; }
-        .strength-strong { background: var(--success-color); width: 100%; }
-
-        .strength-text {
-            font-size: 0.8rem;
-            font-weight: 500;
         }

@@ -32,16 +32,16 @@
             </div>
         </div>
         <nav class="sidebar-menu">
-            <a href="{{ route('admin.dashboard') }}" class="nav-link active">
+            <a href="/admin/dashboard" class="nav-link active">
                 <i class="fas fa-chart-line"></i> Dashboard
             </a>
-            <a href="{{ route('admin.finances') }}" class="nav-link">
+            <a href="/admin/finances" class="nav-link">
                 <i class="fas fa-wallet"></i> Finances
             </a>
-            <a href="{{ route('admin.members') }}" class="nav-link">
+            <a href="/dashboard/members" class="nav-link">
                 <i class="fas fa-users"></i> Membres
             </a>
-            <a href="{{ route('admin.spaces') }}" class="nav-link">
+            <a href="/dashboard/espaces" class="nav-link">
                 <i class="fas fa-door-open"></i> Espaces
             </a>
             <a href="#" class="nav-link">
@@ -50,10 +50,10 @@
             <a href="#" class="nav-link">
                 <i class="fas fa-comments"></i> Chat Interne
             </a>
-            <a href="#" class="nav-link">
+            <a href="/dashboard/sondages" class="nav-link">
                 <i class="fas fa-poll"></i> Sondages
             </a>
-            <a href="#" class="nav-link">
+            <a href="/dashboard/evenements" class="nav-link">
                 <i class="fas fa-calendar-star"></i> Événements
             </a>
             <a href="#" class="nav-link">
@@ -98,7 +98,7 @@
             <div class="stats-card revenue">
                 <div class="stats-header">
                     <div class="stats-icon revenue">
-                        <i class="fas fa-euro-sign"></i>
+                        <i class="fas fa-chart-line"></i>
                     </div>
                 </div>
                 <div class="stats-number" id="revenue-number" data-value="{{ $stats['revenue'] }}">
