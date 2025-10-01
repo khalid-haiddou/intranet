@@ -56,6 +56,10 @@ class User extends Authenticatable
         // Status
         'is_active',
         'last_login_at',
+
+        //user profession and avatar
+        'avatar',
+        'profession',
     ];
 
     protected $hidden = [
@@ -382,6 +386,25 @@ public function getEventParticipationStatus(Event $event): ?string
 public function canCreateEvents(): bool
 {
     return $this->isAdmin();
+}
+
+public function getAvatarUrlAttribute(): string
+{
+    if ($this->avatar && file_exists(public_path($this->avatar))) {
+        return asset($this->avatar);
+    }
+    return '';
+}
+
+/**
+ * Get initials for avatar
+ */
+public function getInitialsAttribute(): string
+{
+    if ($this->isIndividual()) {
+        return strtoupper(substr($this->prenom, 0, 1) . substr($this->nom, 0, 1));
+    }
+    return strtoupper(substr($this->company_name, 0, 2));
 }
 
 }

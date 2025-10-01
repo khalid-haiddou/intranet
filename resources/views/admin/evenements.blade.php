@@ -83,7 +83,7 @@
                             <span class="notification-badge">4</span>
                         </button>
                         <div class="user-avatar">
-                            {{ strtoupper(substr(auth()->user()->display_name, 0, 2)) }}
+                            {{ strtoupper(substr(auth()->user()->display_name ?? 'MA', 0, 2)) }}
                         </div>
                     </div>
                 </div>
@@ -493,9 +493,9 @@
             calendarUrl: "{{ route('api.events.calendar') }}",
             csrfToken: "{{ csrf_token() }}",
             currentUser: {
-                id: {{ auth()->id() }},
-                name: "{{ auth()->user()->display_name }}",
-                initials: "{{ strtoupper(substr(auth()->user()->display_name, 0, 2)) }}"
+                id: {{ auth()->id() ?? 'null' }},
+                name: "{{ auth()->check() ? auth()->user()->display_name : 'MA' }}",
+                initials: "{{ auth()->check() ? strtoupper(substr(auth()->user()->display_name, 0, 2)) : 'MA' }}"
             }
         };
     </script>

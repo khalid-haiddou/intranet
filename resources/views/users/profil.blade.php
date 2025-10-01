@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Mon Compte - La Station Coworking</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -36,7 +37,7 @@
             <a href="#" class="nav-link">
                 <i class="fas fa-calendar-check"></i> Réservations
             </a>
-            <a href="#" class="nav-link active">
+            <a href="{{ route('user.profil') }}" class="nav-link active">
                 <i class="fas fa-user"></i> Mon Profil
             </a>
             <a href="#" class="nav-link">
@@ -71,24 +72,32 @@
         <div class="profile-header loading">
             <div class="profile-info">
                 <div class="profile-avatar">
-                    <div class="avatar-img">MD</div>
+                    @if($user->avatar)
+                        <img src="{{ $user->avatar_url }}" alt="Avatar" class="avatar-img-photo" id="avatarImage">
+                    @else
+                        <div class="avatar-img" id="avatarInitials">{{ $user->initials }}</div>
+                    @endif
                     <div class="avatar-upload" onclick="uploadAvatar()">
                         <i class="fas fa-camera"></i>
                     </div>
                 </div>
                 <div class="profile-details">
-                    <h3>Marie Dupont</h3>
-                    <p><i class="fas fa-envelope me-2"></i>marie.dupont@email.com</p>
-                    <p><i class="fas fa-phone me-2"></i>+212 6 12 34 56 78</p>
+                    <h3>{{ $user->display_name }}</h3>
+                    @if($user->profession)
+                        <p class="profession-badge"><i class="fas fa-briefcase me-2"></i>{{ $user->profession }}</p>
+                    @endif
+                    <p><i class="fas fa-envelope me-2"></i>{{ $user->email }}</p>
+                    <p><i class="fas fa-phone me-2"></i>{{ $user->phone ?? 'Non renseigné' }}</p>
                     <div class="profile-badges">
-                        <span class="badge badge-success">
-                            <i class="fas fa-check-circle me-1"></i>Compte vérifié
+                        <span class="badge badge-{{ $user->is_active ? 'success' : 'danger' }}">
+                            <i class="fas fa-{{ $user->is_active ? 'check-circle' : 'times-circle' }} me-1"></i>
+                            {{ $user->is_active ? 'Compte Actif' : 'Compte Inactif' }}
                         </span>
                         <span class="badge badge-primary">
-                            <i class="fas fa-crown me-1"></i>Bureau Dédié
+                            <i class="fas fa-crown me-1"></i>{{ $user->membership_plan_label }}
                         </span>
                         <span class="badge badge-info">
-                            <i class="fas fa-calendar me-1"></i>Membre depuis 2023
+                            <i class="fas fa-calendar me-1"></i>Membre depuis {{ $user->created_at->year }}
                         </span>
                     </div>
                 </div>
@@ -103,19 +112,19 @@
             </div>
             <div class="account-stats">
                 <div class="stat-item">
-                    <div class="stat-number">142</div>
+                    <div class="stat-number">{{ $stats['days_active'] }}</div>
                     <div class="stat-label">Jours actifs</div>
                 </div>
                 <div class="stat-item">
-                    <div class="stat-number">28</div>
+                    <div class="stat-number">{{ $stats['reservations'] }}</div>
                     <div class="stat-label">Réservations</div>
                 </div>
                 <div class="stat-item">
-                    <div class="stat-number">5</div>
+                    <div class="stat-number">{{ $stats['events'] }}</div>
                     <div class="stat-label">Événements</div>
                 </div>
                 <div class="stat-item">
-                    <div class="stat-number">12</div>
+                    <div class="stat-number">{{ $stats['connections'] }}</div>
                     <div class="stat-label">Connexions</div>
                 </div>
             </div>
@@ -130,35 +139,53 @@
                     <h5>Informations personnelles</h5>
                 </div>
                 <form id="personalInfoForm">
+                    @csrf
                     <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label class="form-label">Prénom</label>
-                                <input type="text" class="form-control" value="Marie" name="firstName">
+                        @if($user->isIndividual())
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label">Prénom</label>
+                                    <input type="text" class="form-control" value="{{ $user->prenom }}" name="prenom" required>
+                                </div>
                             </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label class="form-label">Nom</label>
-                                <input type="text" class="form-control" value="Dupont" name="lastName">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label">Nom</label>
+                                    <input type="text" class="form-control" value="{{ $user->nom }}" name="nom" required>
+                                </div>
                             </div>
-                        </div>
+                        @else
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label">Nom de l'entreprise</label>
+                                    <input type="text" class="form-control" value="{{ $user->company_name }}" name="company_name" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label">Représentant légal</label>
+                                    <input type="text" class="form-control" value="{{ $user->legal_representative }}" name="legal_representative" required>
+                                </div>
+                            </div>
+                        @endif
                     </div>
                     <div class="form-group">
                         <label class="form-label">Email</label>
-                        <input type="email" class="form-control" value="marie.dupont@email.com" name="email">
+                        <input type="email" class="form-control" value="{{ $user->email }}" name="email" required>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Téléphone</label>
-                        <input type="tel" class="form-control" value="+212 6 12 34 56 78" name="phone">
+                        <input type="tel" class="form-control" value="{{ $user->phone }}" name="phone" required>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Profession</label>
-                        <input type="text" class="form-control" value="Développeuse Web" name="profession">
+                        <label class="form-label">Profession / Titre</label>
+                        <input type="text" class="form-control" value="{{ $user->profession }}" name="profession" 
+                               placeholder="Ex: Designer UX, Développeur Web, Graphiste...">
+                        <small class="form-text text-muted">Votre titre professionnel qui sera affiché sur votre profil</small>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Entreprise</label>
-                        <input type="text" class="form-control" value="Tech Solutions SARL" name="company">
+                        <label class="form-label">Adresse</label>
+                        <input type="text" class="form-control" value="{{ $user->address }}" name="address">
                     </div>
                     <button type="submit" class="btn-primary">
                         <i class="fas fa-save"></i>
@@ -174,13 +201,14 @@
                     <h5>Sécurité</h5>
                 </div>
                 <form id="securityForm">
+                    @csrf
                     <div class="form-group">
                         <label class="form-label">Mot de passe actuel</label>
-                        <input type="password" class="form-control" name="currentPassword" placeholder="••••••••">
+                        <input type="password" class="form-control" name="current_password" placeholder="••••••••" required>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Nouveau mot de passe</label>
-                        <input type="password" class="form-control" name="newPassword" id="newPassword" placeholder="••••••••">
+                        <input type="password" class="form-control" name="new_password" id="newPassword" placeholder="••••••••" required>
                         <div class="password-strength">
                             <div class="strength-bar">
                                 <div class="strength-fill" id="strengthBar"></div>
@@ -190,7 +218,7 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label">Confirmer le mot de passe</label>
-                        <input type="password" class="form-control" name="confirmPassword" id="confirmPassword" placeholder="••••••••">
+                        <input type="password" class="form-control" name="new_password_confirmation" id="confirmPassword" placeholder="••••••••" required>
                         <div class="form-text" id="passwordMatch"></div>
                     </div>
                     <button type="submit" class="btn-primary">
@@ -212,7 +240,7 @@
                         <small>Recevoir les notifications importantes par email</small>
                     </div>
                     <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" id="emailNotifications" checked>
+                        <input class="form-check-input" type="checkbox" id="emailNotifications" checked disabled>
                     </div>
                 </div>
                 <div class="settings-item">
@@ -221,7 +249,7 @@
                         <small>Rappels 24h avant vos réservations</small>
                     </div>
                     <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" id="bookingReminders" checked>
+                        <input class="form-check-input" type="checkbox" id="bookingReminders" checked disabled>
                     </div>
                 </div>
                 <div class="settings-item">
@@ -230,7 +258,7 @@
                         <small>Notifications pour les nouveaux événements</small>
                     </div>
                     <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" id="eventNotifications">
+                        <input class="form-check-input" type="checkbox" id="eventNotifications" disabled>
                     </div>
                 </div>
                 <div class="settings-item">
@@ -239,7 +267,9 @@
                         <small>Actualités et conseils coworking</small>
                     </div>
                     <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" id="newsletter" checked>
+                        <input class="form-check-input" type="checkbox" id="newsletter" 
+                               {{ $user->newsletter ? 'checked' : '' }}
+                               onchange="updateNotifications()">
                     </div>
                 </div>
             </div>
@@ -250,47 +280,9 @@
                     <i class="fas fa-file-alt" style="color: var(--info-color);"></i>
                     <h5>Mes documents</h5>
                 </div>
-                <div class="document-item">
-                    <div class="document-info">
-                        <div class="document-icon pdf">
-                            <i class="fas fa-file-pdf"></i>
-                        </div>
-                        <div class="document-details">
-                            <h6>Contrat d'abonnement</h6>
-                            <small>Signé le 15 mars 2023 • 245 KB</small>
-                        </div>
-                    </div>
-                    <button class="download-btn" onclick="downloadDocument('contract')">
-                        <i class="fas fa-download"></i>
-                    </button>
-                </div>
-                <div class="document-item">
-                    <div class="document-info">
-                        <div class="document-icon pdf">
-                            <i class="fas fa-file-pdf"></i>
-                        </div>
-                        <div class="document-details">
-                            <h6>Facture Décembre 2024</h6>
-                            <small>Émise le 1 décembre 2024 • 128 KB</small>
-                        </div>
-                    </div>
-                    <button class="download-btn" onclick="downloadDocument('invoice-dec')">
-                        <i class="fas fa-download"></i>
-                    </button>
-                </div>
-                <div class="document-item">
-                    <div class="document-info">
-                        <div class="document-icon doc">
-                            <i class="fas fa-file-word"></i>
-                        </div>
-                        <div class="document-details">
-                            <h6>Règlement intérieur</h6>
-                            <small>Version 2024 • 89 KB</small>
-                        </div>
-                    </div>
-                    <button class="download-btn" onclick="downloadDocument('rules')">
-                        <i class="fas fa-download"></i>
-                    </button>
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    La section documents sera disponible prochainement.
                 </div>
             </div>
         </div>

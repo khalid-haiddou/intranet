@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\SpacesController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\Admin\FinancesController;
 use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\User\UserProfileController;
 
 /*
 |--------------------------------------------------------------------------
@@ -140,6 +141,19 @@ Route::put('/admin/finances/invoices/{id}', [FinancesController::class, 'updateI
 // Redirect root to login for now
 Route::get('/', function () {
     return redirect()->route('login');
+});
+
+
+
+// User Profile Routes
+Route::prefix('user')->name('user.')->group(function () {
+    Route::get('/profil', [UserProfileController::class, 'index'])->name('profil');
+    Route::post('/profil/update', [UserProfileController::class, 'updatePersonalInfo'])->name('profil.update');
+    Route::post('/profil/avatar', [UserProfileController::class, 'uploadAvatar'])->name('profil.avatar'); // ADDED
+    Route::post('/profil/password', [UserProfileController::class, 'updatePassword'])->name('profil.password');
+    Route::post('/profil/notifications', [UserProfileController::class, 'updateNotifications'])->name('profil.notifications');
+    Route::post('/profil/deactivate', [UserProfileController::class, 'deactivate'])->name('profil.deactivate');
+    Route::delete('/profil/delete', [UserProfileController::class, 'destroy'])->name('profil.delete');
 });
 
 
